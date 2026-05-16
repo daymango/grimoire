@@ -135,11 +135,10 @@
 </div>
 
 <script type="module">
-import { initNav } from '../js/nav.js';
-import { supabase, getUser } from '../js/supabase.js';
+import { initNav, isDM } from '../js/nav.js';
+import { supabase } from '../js/supabase.js';
 
-await initNav();
-const user = await getUser();
+initNav();
 
 let allChars = [];
 let currentChar = null;
@@ -166,11 +165,8 @@ function profBonus(level) {
 }
 
 async function load() {
-  if (!user) {
-    document.getElementById('char-list').innerHTML = '<p style="color:var(--ash-2);font-style:italic;font-size:0.9rem">Sign in to create and save characters.</p>';
-    return;
-  }
-  const { data } = await supabase.from('characters').select('*').eq('user_id', user.id).order('created_at');
+  
+  const { data } = await supabase.from('characters').select('*').order('created_at');
   allChars = data ?? [];
   renderList();
 }
@@ -198,12 +194,11 @@ window.showCreateForm = function() {
 };
 
 window.createCharacter = async function() {
-  if (!user) { alert('Please sign in to create a character.'); return; }
+  
   const name = document.getElementById('f-charname').value.trim();
   if (!name) return alert('Character name required.');
 
   const data = {
-    user_id: user.id,
     name,
     player_name: document.getElementById('f-playername').value.trim(),
     race: document.getElementById('f-race').value.trim(),

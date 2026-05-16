@@ -162,12 +162,12 @@
 </div>
 
 <script type="module">
-import { initNav } from '../js/nav.js';
-import { supabase, getRole } from '../js/supabase.js';
+import { initNav, isDM } from '../js/nav.js';
 
-await initNav();
-const role = await getRole();
-if (role === 'dm') document.getElementById('btn-add-monster').style.display = 'inline-flex';
+
+initNav();
+const role = isDM();
+if (role) document.getElementById('btn-add-monster').style.display = 'inline-flex';
 
 let allMonsters = [];
 let editingId = null;

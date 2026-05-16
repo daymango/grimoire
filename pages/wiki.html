@@ -127,8 +127,8 @@
 </div>
 
 <script type="module">
-import { initNav } from '../js/nav.js';
-import { supabase, getRole } from '../js/supabase.js';
+import { initNav, isDM } from '../js/nav.js';
+import { supabase } from '../js/supabase.js';
 
 // Simple markdown parser
 function md(text) {
@@ -148,9 +148,9 @@ function md(text) {
     .replace(/\n/g, '<br>');
 }
 
-await initNav();
-const role = await getRole();
-if (role === 'dm') document.getElementById('btn-new-page').style.display = 'inline-flex';
+initNav();
+const role = isDM();
+if (role) document.getElementById('btn-new-page').style.display = 'inline-flex';
 
 let allPages = [];
 let currentPage = null;
