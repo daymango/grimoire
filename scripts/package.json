@@ -1,0 +1,11 @@
+{
+  "name": "grimoire-scripts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "seed-spells": "node seed_spells.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2"
+  }
+}
