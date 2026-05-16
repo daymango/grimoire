@@ -4,7 +4,7 @@
    Fonts: Cinzel Decorative (display) + Crimson Pro (body)
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=UnifrakturMaguntia&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Inter:wght@300;400;500;600;700&family=UnifrakturMaguntia&display=swap');
 
 /* ── Tokens ─────────────────────────────────────────────── */
 :root {
@@ -16,7 +16,7 @@
 
   /* ── Main Text ────────────────────────────────────── */
   --parchment:   #a79fb8;
-  --parchment-2: #c8c2d9;
+  --parchment-2: #ddd6f3;
   --parchment-3: #ece8f6;
 
   /* ── Violet Accent System ─────────────────────────── */
@@ -31,7 +31,7 @@
   /* ── Ash / Fog ────────────────────────────────────── */
   --ash:         #4b4458;
   --ash-2:       #6b6478;
-  --ash-3:       #978fa8;
+ --ash-3: #b4acc8;
 
   /* ── Optional Blood Accent ────────────────────────── */
   --blood:       #4a1020;
@@ -53,7 +53,7 @@
   /* ── Typography ───────────────────────────────────── */
   --font-display: 'Cinzel Decorative', serif;
   --font-fraktur: 'UnifrakturMaguntia', cursive;
-  --font-body:    'Crimson Pro', Georgia, serif;
+  --font-body: 'Inter', 'Segoe UI', sans-serif;
 
   /* ── Radius ───────────────────────────────────────── */
   --radius-sm: 4px;
@@ -70,13 +70,21 @@
 html { scroll-behavior: smooth; }
 
 body {
-  background:   radial-gradient(circle at top, rgba(110,68,255,0.08), transparent 40%),   linear-gradient(to bottom, #08070b, #100d16 40%, #08070b 100%);
+  background-color: var(--ink);
   color: var(--parchment-2);
   font-family: var(--font-body);
+
   font-size: 18px;
-  line-height: 1.7;
+  line-height: 1.8;
+
+  font-weight: 400;
+  letter-spacing: 0.01em;
+
   min-height: 100vh;
   overflow-x: hidden;
+
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 /* Subtle stone texture via CSS noise */
@@ -93,7 +101,7 @@ body::before {
 
 /* ── Typography ─────────────────────────────────────────── */
 h1, h2, h3, h4 {
-  font-family: var(--font-display);
+  font-family: var(--font-body); font-weight: 700;
   color: var(--parchment-3);
   letter-spacing: 0.04em;
   line-height: 1.2;
@@ -173,9 +181,9 @@ hr.rune {
 }
 
 .nav-links a {
-  font-family: var(--font-display);
+  font-family: var(--font-body);
+  font-weight: 600;
   font-size: 0.65rem;
-  font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--ash-3);
@@ -197,7 +205,8 @@ hr.rune {
 }
 
 .nav-auth .btn-ghost {
-  font-family: var(--font-display);
+  font-family: var(--font-body); 
+   font-weight: 700;
   font-size: 0.6rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -229,9 +238,9 @@ hr.rune {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  font-family: var(--font-display);
+  font-family: var(--font-body); 
+   font-weight: 700;
   font-size: 0.7rem;
-  font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   padding: 0.65rem 1.4rem;
@@ -319,9 +328,9 @@ hr.rune {
 
 .card-tag {
   display: inline-block;
-  font-family: var(--font-display);
+  font-family: var(--font-body); 
+   font-weight: 700;
   font-size: 0.55rem;
-  font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   padding: 0.2rem 0.6rem;
@@ -420,7 +429,8 @@ hr.rune {
   border: 1px solid var(--violet);
   border-radius: var(--radius-sm);
   padding: 0.75rem 1.25rem;
-  font-family: var(--font-display);
+  font-family: var(--font-body); 
+   font-weight: 700;
   font-size: 0.7rem;
   letter-spacing: 0.08em;
   color: var(--parchment-2);
