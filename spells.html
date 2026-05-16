@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Spells — The Grimoire</title>
+  <link rel="stylesheet" href="../css/grimoire.css"/>
+  <style>
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .filters .grimoire-input,
+    .filters select {
+      flex: 1;
+      min-width: 160px;
+      max-width: 220px;
+    }
+    select.grimoire-input option { background: var(--ink-2); }
+
+    .spell-card {
+      background: var(--ink-2);
+      border: 1px solid rgba(201,151,42,0.12);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.5rem;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.2s;
+      position: relative;
+    }
+    .spell-card:hover { border-color: rgba(201,151,42,0.4); transform: translateY(-2px); }
+    .spell-card h3 {
+      font-family: var(--font-display);
+      font-size: 0.9rem;
+      color: var(--gold-2);
+      margin-bottom: 0.25rem;
+    }
+    .spell-meta {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.5rem;
+    }
+    .spell-card p {
+      font-size: 0.95rem;
+      color: var(--ash-3);
+      margin: 0;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .spell-level-badge {
+      font-family: var(--font-display);
+      font-size: 0.55rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.15rem 0.5rem;
+      border-radius: 2px;
+      background: rgba(139,0,0,0.3);
+      color: #d46060;
+      border: 1px solid rgba(139,0,0,0.4);
+    }
+
+    /* ── Spell Detail Modal ─────────────────────────── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--ink-2);
+      border: 1px solid rgba(201,151,42,0.3);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      max-width: 640px;
+      width: 100%;
+      max-height: 85vh;
+      overflow-y: auto;
+      position: relative;
+      animation: fadeUp 0.3s ease both;
+    }
+    .modal-close {
+      position: absolute;
+      top: 1rem; right: 1rem;
+      background: none;
+      border: none;
+      color: var(--ash-2);
+      font-size: 1.3rem;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .modal-close:hover { color: var(--parchment-3); }
+    .modal h2 {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      color: var(--gold-2);
+      margin-bottom: 0.5rem;
+    }
+    .stat-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 0.5rem;
+      margin: 1rem 0;
+    }
+    .stat-item {
+      background: var(--ink-3);
+      border: 1px solid rgba(201,151,42,0.1);
+      border-radius: var(--radius-sm);
+      padding: 0.5rem 0.75rem;
+    }
+    .stat-label {
+      font-family: var(--font-display);
+      font-size: 0.5rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ash-2);
+      margin-bottom: 0.1rem;
+    }
+    .stat-value { font-size: 0.95rem; color: var(--parchment-2); }
+
+    /* ── Add/Edit Form ───────────────────────────────── */
+    .spell-form { display: none; }
+    .spell-form.open { display: block; }
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .form-group label {
+      display: block;
+      font-family: var(--font-display);
+      font-size: 0.55rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ash-3);
+      margin-bottom: 0.35rem;
+    }
+    textarea.grimoire-input { resize: vertical; min-height: 80px; }
+
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--ash-2);
+      font-style: italic;
+    }
+    .empty-state span { font-size: 3rem; display: block; margin-bottom: 1rem; opacity: 0.4; }
+  </style>
+</head>
+<body data-page="spells">
+<div class="page-content">
+<div class="container">
+
+  <div class="section-header fade-up">
+    <div>
+      <h2>Spell Encyclopedia</h2>
+      <p style="color:var(--ash-3);font-style:italic;margin:0">Every incantation, curse, and ritual known to this world</p>
+    </div>
+    <button class="btn btn-blood" id="btn-add-spell" style="display:none" onclick="openAddForm()">+ Add Spell</button>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters fade-up-2">
+    <input class="grimoire-input" type="search" id="search-input" placeholder="Search spells…" oninput="filterSpells()"/>
+    <select class="grimoire-input" id="filter-level" onchange="filterSpells()">
+      <option value="">All Levels</option>
+      <option value="0">Cantrip</option>
+      <option value="1">1st Level</option>
+      <option value="2">2nd Level</option>
+      <option value="3">3rd Level</option>
+      <option value="4">4th Level</option>
+      <option value="5">5th Level</option>
+      <option value="6">6th Level</option>
+      <option value="7">7th Level</option>
+      <option value="8">8th Level</option>
+      <option value="9">9th Level</option>
+    </select>
+    <select class="grimoire-input" id="filter-school" onchange="filterSpells()">
+      <option value="">All Schools</option>
+      <option>Abjuration</option>
+      <option>Conjuration</option>
+      <option>Divination</option>
+      <option>Enchantment</option>
+      <option>Evocation</option>
+      <option>Illusion</option>
+      <option>Necromancy</option>
+      <option>Transmutation</option>
+    </select>
+    <select class="grimoire-input" id="filter-class" onchange="filterSpells()">
+      <option value="">All Classes</option>
+      <option>Bard</option>
+      <option>Cleric</option>
+      <option>Druid</option>
+      <option>Paladin</option>
+      <option>Ranger</option>
+      <option>Sorcerer</option>
+      <option>Warlock</option>
+      <option>Wizard</option>
+    </select>
+  </div>
+
+  <!-- Add/Edit Form (DM only) -->
+  <div class="card spell-form fade-up" id="spell-form">
+    <h3 style="color:var(--gold);margin-bottom:1rem;font-family:var(--font-display);font-size:0.85rem;letter-spacing:0.1em;text-transform:uppercase" id="form-title">Add New Spell</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Spell Name</label>
+        <input class="grimoire-input" type="text" id="f-name" required placeholder="e.g. Eldritch Decay"/>
+      </div>
+      <div class="form-group">
+        <label>Level (0 = Cantrip)</label>
+        <input class="grimoire-input" type="number" id="f-level" min="0" max="9" placeholder="1"/>
+      </div>
+      <div class="form-group">
+        <label>School</label>
+        <select class="grimoire-input" id="f-school">
+          <option>Necromancy</option><option>Evocation</option><option>Abjuration</option>
+          <option>Conjuration</option><option>Divination</option><option>Enchantment</option>
+          <option>Illusion</option><option>Transmutation</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Casting Time</label>
+        <input class="grimoire-input" type="text" id="f-casting-time" placeholder="1 action"/>
+      </div>
+      <div class="form-group">
+        <label>Range</label>
+        <input class="grimoire-input" type="text" id="f-range" placeholder="60 feet"/>
+      </div>
+      <div class="form-group">
+        <label>Duration</label>
+        <input class="grimoire-input" type="text" id="f-duration" placeholder="Concentration, 1 minute"/>
+      </div>
+      <div class="form-group">
+        <label>Components</label>
+        <input class="grimoire-input" type="text" id="f-components" placeholder="V, S, M (ash)"/>
+      </div>
+      <div class="form-group">
+        <label>Classes (comma-separated)</label>
+        <input class="grimoire-input" type="text" id="f-classes" placeholder="Wizard, Warlock"/>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:0.75rem">
+      <label>Description</label>
+      <textarea class="grimoire-input" id="f-description" rows="4" placeholder="What does this spell do?"></textarea>
+    </div>
+    <div class="form-group" style="margin-bottom:1rem">
+      <label>Higher Levels (optional)</label>
+      <textarea class="grimoire-input" id="f-higher" rows="2" placeholder="When cast at a higher level…"></textarea>
+    </div>
+    <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
+      <button class="btn btn-blood" onclick="saveSpell()">Save Spell</button>
+      <button class="btn btn-ink" onclick="closeForm()">Cancel</button>
+      <button class="btn btn-ink" id="btn-delete-spell" style="display:none;margin-left:auto;border-color:var(--blood)" onclick="deleteSpell()">Delete</button>
+    </div>
+  </div>
+
+  <!-- Spell Grid -->
+  <div class="grid-3" id="spell-grid" style="margin-top:1.5rem"></div>
+  <div id="empty-spells" style="display:none" class="empty-state">
+    <span>✦</span>
+    <p>No spells found. The DM must add them — or your search returned no results.</p>
+  </div>
+
+</div>
+</div>
+
+<!-- Spell Detail Modal -->
+<div class="modal-overlay" id="spell-modal" onclick="closeModal(event)">
+  <div class="modal" id="modal-content">
+    <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script type="module">
+import { initNav } from '../js/nav.js';
+import { supabase, getRole } from '../js/supabase.js';
+
+await initNav();
+const role = await getRole();
+if (role === 'dm') document.getElementById('btn-add-spell').style.display = 'inline-flex';
+
+let allSpells = [];
+let editingId = null;
+
+async function loadSpells() {
+  const { data, error } = await supabase.from('spells').select('*').order('level').order('name');
+  if (error) { console.error(error); return; }
+  allSpells = data ?? [];
+  renderSpells(allSpells);
+}
+
+function levelLabel(l) {
+  if (l === 0) return 'Cantrip';
+  const s = ['','1st','2nd','3rd','4th','5th','6th','7th','8th','9th'];
+  return (s[l] ?? l) + ' Level';
+}
+
+function renderSpells(spells) {
+  const grid = document.getElementById('spell-grid');
+  const empty = document.getElementById('empty-spells');
+  if (!spells.length) { grid.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  grid.innerHTML = spells.map(s => `
+    <div class="spell-card fade-up" onclick="openModal(${s.id})">
+      <div class="spell-meta">
+        <span class="spell-level-badge">${levelLabel(s.level)}</span>
+        <span class="card-tag tag-ash">${s.school}</span>
+      </div>
+      <h3>${s.name}</h3>
+      <p>${s.description ?? ''}</p>
+      ${role === 'dm' ? `<button class="btn btn-ink" style="margin-top:0.75rem;font-size:0.55rem;padding:0.3rem 0.75rem" onclick="event.stopPropagation();editSpell(${s.id})">Edit</button>` : ''}
+    </div>
+  `).join('');
+}
+
+window.filterSpells = function() {
+  const q     = document.getElementById('search-input').value.toLowerCase();
+  const level = document.getElementById('filter-level').value;
+  const school= document.getElementById('filter-school').value;
+  const cls   = document.getElementById('filter-class').value;
+  const filtered = allSpells.filter(s =>
+    (!q     || s.name.toLowerCase().includes(q) || (s.description??'').toLowerCase().includes(q)) &&
+    (!level || s.level == level) &&
+    (!school|| s.school === school) &&
+    (!cls   || (s.classes??'').includes(cls))
+  );
+  renderSpells(filtered);
+};
+
+window.openModal = function(id) {
+  const s = allSpells.find(x => x.id === id);
+  if (!s) return;
+  document.getElementById('modal-body').innerHTML = `
+    <div class="spell-meta">${
+      ['<span class="spell-level-badge">'+levelLabel(s.level)+'</span>',
+       '<span class="card-tag tag-ash">'+s.school+'</span>',
+       s.ritual ? '<span class="card-tag tag-gold">Ritual</span>' : '',
+       s.concentration ? '<span class="card-tag tag-bone">Concentration</span>' : ''
+      ].join('')
+    }</div>
+    <h2>${s.name}</h2>
+    <div class="stat-row">
+      <div class="stat-item"><div class="stat-label">Casting Time</div><div class="stat-value">${s.casting_time??'—'}</div></div>
+      <div class="stat-item"><div class="stat-label">Range</div><div class="stat-value">${s.range??'—'}</div></div>
+      <div class="stat-item"><div class="stat-label">Duration</div><div class="stat-value">${s.duration??'—'}</div></div>
+      <div class="stat-item"><div class="stat-label">Components</div><div class="stat-value">${s.components??'—'}</div></div>
+      <div class="stat-item"><div class="stat-label">Classes</div><div class="stat-value">${s.classes??'—'}</div></div>
+    </div>
+    <hr class="rune"/>
+    <p style="font-size:1rem;color:var(--parchment-2)">${(s.description??'').replace(/\n/g,'<br>')}</p>
+    ${s.higher_levels ? `<div style="margin-top:1rem;padding:1rem;background:var(--ink-3);border-radius:var(--radius-sm);border-left:2px solid var(--blood)"><p style="font-size:0.85rem;color:var(--ash-3);margin:0"><strong style="color:var(--gold);font-family:var(--font-display);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase">At Higher Levels.</strong><br>${s.higher_levels}</p></div>` : ''}
+  `;
+  document.getElementById('spell-modal').classList.add('open');
+};
+
+window.closeModal = function(e) { if (e.target.id === 'spell-modal') document.getElementById('spell-modal').classList.remove('open'); };
+window.closeModalDirect = function() { document.getElementById('spell-modal').classList.remove('open'); };
+
+window.openAddForm = function() {
+  editingId = null;
+  document.getElementById('form-title').textContent = 'Add New Spell';
+  document.getElementById('btn-delete-spell').style.display = 'none';
+  ['name','level','casting-time','range','duration','components','classes','description','higher'].forEach(f => {
+    const el = document.getElementById('f-'+f);
+    if (el) el.value = '';
+  });
+  const form = document.getElementById('spell-form');
+  form.classList.add('open');
+  form.scrollIntoView({ behavior:'smooth' });
+};
+
+window.editSpell = function(id) {
+  const s = allSpells.find(x => x.id === id);
+  if (!s) return;
+  editingId = id;
+  document.getElementById('form-title').textContent = 'Edit Spell';
+  document.getElementById('btn-delete-spell').style.display = 'inline-flex';
+  document.getElementById('f-name').value = s.name ?? '';
+  document.getElementById('f-level').value = s.level ?? 1;
+  document.getElementById('f-school').value = s.school ?? 'Necromancy';
+  document.getElementById('f-casting-time').value = s.casting_time ?? '';
+  document.getElementById('f-range').value = s.range ?? '';
+  document.getElementById('f-duration').value = s.duration ?? '';
+  document.getElementById('f-components').value = s.components ?? '';
+  document.getElementById('f-classes').value = s.classes ?? '';
+  document.getElementById('f-description').value = s.description ?? '';
+  document.getElementById('f-higher').value = s.higher_levels ?? '';
+  const form = document.getElementById('spell-form');
+  form.classList.add('open');
+  form.scrollIntoView({ behavior:'smooth' });
+};
+
+window.saveSpell = async function() {
+  const payload = {
+    name:         document.getElementById('f-name').value.trim(),
+    level:        parseInt(document.getElementById('f-level').value) || 0,
+    school:       document.getElementById('f-school').value,
+    casting_time: document.getElementById('f-casting-time').value.trim(),
+    range:        document.getElementById('f-range').value.trim(),
+    duration:     document.getElementById('f-duration').value.trim(),
+    components:   document.getElementById('f-components').value.trim(),
+    classes:      document.getElementById('f-classes').value.trim(),
+    description:  document.getElementById('f-description').value.trim(),
+    higher_levels:document.getElementById('f-higher').value.trim(),
+  };
+  if (!payload.name) return alert('Spell name is required.');
+
+  let error;
+  if (editingId) {
+    ({ error } = await supabase.from('spells').update(payload).eq('id', editingId));
+  } else {
+    ({ error } = await supabase.from('spells').insert(payload));
+  }
+  if (error) { alert('Error: ' + error.message); return; }
+  closeForm();
+  loadSpells();
+};
+
+window.deleteSpell = async function() {
+  if (!editingId || !confirm('Delete this spell permanently?')) return;
+  const { error } = await supabase.from('spells').delete().eq('id', editingId);
+  if (error) { alert('Error: ' + error.message); return; }
+  closeForm();
+  loadSpells();
+};
+
+window.closeForm = function() {
+  document.getElementById('spell-form').classList.remove('open');
+  editingId = null;
+};
+
+loadSpells();
+</script>
+</body>
+</html>

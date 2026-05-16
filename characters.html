@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Characters — The Grimoire</title>
+  <link rel="stylesheet" href="../css/grimoire.css"/>
+  <style>
+    .char-layout { display: grid; grid-template-columns: 280px 1fr; gap: 2rem; align-items: start; }
+    @media (max-width: 900px) { .char-layout { grid-template-columns: 1fr; } }
+
+    /* Character list */
+    .char-sidebar { position: sticky; top: calc(var(--nav-h) + 1rem); }
+    .char-item {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.75rem; border-radius: var(--radius-md);
+      border: 1px solid rgba(201,151,42,0.1);
+      background: var(--ink-2); cursor: pointer;
+      transition: all 0.2s; margin-bottom: 0.5rem;
+    }
+    .char-item:hover { border-color: rgba(201,151,42,0.35); }
+    .char-item.active { border-color: var(--gold); background: rgba(201,151,42,0.07); }
+    .char-avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--ink-3); border: 2px solid rgba(201,151,42,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
+    .char-info h4 { font-family: var(--font-display); font-size: 0.7rem; color: var(--parchment-3); margin-bottom: 0.1rem; }
+    .char-info p { font-size: 0.8rem; color: var(--ash-2); margin: 0; }
+
+    /* Sheet */
+    .sheet-header { display: flex; align-items: center; gap: 1.5rem; margin-bottom: 2rem; flex-wrap: wrap; }
+    .sheet-name { font-family: var(--font-display); font-size: 1.5rem; color: var(--gold-2); margin-bottom: 0.2rem; }
+    .sheet-class { font-size: 0.9rem; color: var(--ash-3); font-style: italic; }
+
+    .sheet-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.25rem; }
+    .sheet-section { background: var(--ink-2); border: 1px solid rgba(201,151,42,0.12); border-radius: var(--radius-md); padding: 1.25rem; }
+    .sheet-section h3 { font-family: var(--font-display); font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(201,151,42,0.15); }
+
+    /* Ability scores */
+    .ability-grid { display: grid; grid-template-columns: repeat(6,1fr); gap: 0.5rem; }
+    .ability-box { background: var(--ink-3); border: 1px solid rgba(201,151,42,0.1); border-radius: var(--radius-sm); padding: 0.6rem 0.25rem; text-align: center; }
+    .ability-box .ab-label { font-family: var(--font-display); font-size: 0.45rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ash-2); }
+    .ability-box .ab-score { font-size: 1.2rem; color: var(--parchment-2); line-height: 1.2; }
+    .ability-box .ab-mod { font-size: 0.8rem; color: var(--gold); }
+    .ability-box input { background: transparent; border: none; outline: none; color: var(--parchment-2); font-size: 1.2rem; text-align: center; width: 100%; font-family: var(--font-body); }
+
+    /* Core stats row */
+    .core-stats { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .core-stat { background: var(--ink-3); border: 1px solid rgba(201,151,42,0.1); border-radius: var(--radius-sm); padding: 0.6rem 1rem; flex: 1; min-width: 80px; text-align: center; }
+    .core-stat .cs-label { font-family: var(--font-display); font-size: 0.45rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ash-2); margin-bottom: 0.15rem; }
+    .core-stat input { background: transparent; border: none; outline: none; color: var(--parchment-2); font-size: 1.1rem; text-align: center; width: 100%; font-family: var(--font-body); }
+
+    /* HP bar */
+    .hp-bar-wrap { height: 8px; background: var(--ink-3); border-radius: 4px; overflow: hidden; margin-top: 0.25rem; }
+    .hp-bar { height: 100%; background: var(--blood-2); border-radius: 4px; transition: width 0.3s; }
+
+    /* Skills list */
+    .skills-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0.2rem; }
+    .skill-row { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; padding: 0.15rem 0; }
+    .skill-prof { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--ash); cursor: pointer; flex-shrink: 0; transition: all 0.2s; }
+    .skill-prof.on { background: var(--gold); border-color: var(--gold); }
+    .skill-name { color: var(--ash-3); flex: 1; font-size: 0.8rem; }
+    .skill-mod { color: var(--gold); font-size: 0.8rem; min-width: 28px; text-align: right; }
+
+    /* Notes textarea */
+    .notes-area { width: 100%; min-height: 120px; resize: vertical; }
+
+    /* Form for creating new character */
+    .char-create-form { background: var(--ink-2); border: 1px solid rgba(201,151,42,0.2); border-radius: var(--radius-md); padding: 1.5rem; }
+    .char-create-form h3 { font-family: var(--font-display); font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin-bottom: 1.25rem; }
+    .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem; }
+    .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem; }
+    label.fl { display: block; font-family: var(--font-display); font-size: 0.55rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ash-3); margin-bottom: 0.3rem; }
+
+    .empty-state { text-align: center; padding: 4rem 2rem; color: var(--ash-2); font-style: italic; }
+    .empty-state span { font-size: 3rem; display: block; margin-bottom: 1rem; opacity: 0.4; }
+  </style>
+</head>
+<body data-page="characters">
+<div class="page-content">
+<div class="container">
+
+  <div class="section-header fade-up" style="margin-bottom:2rem">
+    <div>
+      <h2>Characters</h2>
+      <p style="color:var(--ash-3);font-style:italic;margin:0">Build, save, and manage your character sheet</p>
+    </div>
+    <button class="btn btn-blood" onclick="showCreateForm()">+ New Character</button>
+  </div>
+
+  <div id="create-form-wrap" style="display:none;margin-bottom:2rem">
+    <div class="char-create-form">
+      <h3 id="create-form-title">Create New Character</h3>
+      <div class="form-row-2">
+        <div><label class="fl">Character Name</label><input class="grimoire-input" id="f-charname" placeholder="Kael Duskmantle"/></div>
+        <div><label class="fl">Player Name</label><input class="grimoire-input" id="f-playername" placeholder="Your name"/></div>
+      </div>
+      <div class="form-row-3">
+        <div><label class="fl">Race</label><input class="grimoire-input" id="f-race" placeholder="Half-Elf"/></div>
+        <div><label class="fl">Class</label><input class="grimoire-input" id="f-class" placeholder="Warlock"/></div>
+        <div><label class="fl">Subclass</label><input class="grimoire-input" id="f-subclass" placeholder="The Undying"/></div>
+      </div>
+      <div class="form-row-3">
+        <div><label class="fl">Level</label><input class="grimoire-input" id="f-charlevel" type="number" min="1" max="20" value="1"/></div>
+        <div><label class="fl">Background</label><input class="grimoire-input" id="f-background" placeholder="Haunted One"/></div>
+        <div><label class="fl">Alignment</label><input class="grimoire-input" id="f-charalignment" placeholder="Chaotic Neutral"/></div>
+      </div>
+      <div class="form-row-2" style="margin-bottom:1.25rem">
+        <div><label class="fl">Avatar Emoji</label><input class="grimoire-input" id="f-avatar" placeholder="🧙 or leave blank" maxlength="4"/></div>
+        <div><label class="fl">XP</label><input class="grimoire-input" id="f-xp" type="number" min="0" value="0"/></div>
+      </div>
+      <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
+        <button class="btn btn-blood" onclick="createCharacter()">Create Character</button>
+        <button class="btn btn-ink" onclick="document.getElementById('create-form-wrap').style.display='none'">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="main-layout">
+    <div class="char-layout">
+      <!-- Sidebar -->
+      <aside class="char-sidebar fade-up">
+        <h3 style="font-family:var(--font-display);font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);margin-bottom:0.75rem">Your Party</h3>
+        <div id="char-list"><p style="color:var(--ash-2);font-style:italic;font-size:0.9rem">No characters yet.</p></div>
+      </aside>
+
+      <!-- Sheet -->
+      <main id="char-sheet">
+        <div class="empty-state fade-up-2">
+          <span>⚔</span>
+          <p>Select a character or create a new one to begin.</p>
+        </div>
+      </main>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script type="module">
+import { initNav } from '../js/nav.js';
+import { supabase, getUser } from '../js/supabase.js';
+
+await initNav();
+const user = await getUser();
+
+let allChars = [];
+let currentChar = null;
+let saveTimer = null;
+
+const SKILLS = [
+  {name:'Acrobatics',ability:'dex'},{name:'Animal Handling',ability:'wis'},
+  {name:'Arcana',ability:'int'},{name:'Athletics',ability:'str'},
+  {name:'Deception',ability:'cha'},{name:'History',ability:'int'},
+  {name:'Insight',ability:'wis'},{name:'Intimidation',ability:'cha'},
+  {name:'Investigation',ability:'int'},{name:'Medicine',ability:'wis'},
+  {name:'Nature',ability:'int'},{name:'Perception',ability:'wis'},
+  {name:'Performance',ability:'cha'},{name:'Persuasion',ability:'cha'},
+  {name:'Religion',ability:'int'},{name:'Sleight of Hand',ability:'dex'},
+  {name:'Stealth',ability:'dex'},{name:'Survival',ability:'wis'},
+];
+
+function mod(score) {
+  const m = Math.floor((score - 10) / 2);
+  return (m >= 0 ? '+' : '') + m;
+}
+function profBonus(level) {
+  return Math.ceil(level / 4) + 1;
+}
+
+async function load() {
+  if (!user) {
+    document.getElementById('char-list').innerHTML = '<p style="color:var(--ash-2);font-style:italic;font-size:0.9rem">Sign in to create and save characters.</p>';
+    return;
+  }
+  const { data } = await supabase.from('characters').select('*').eq('user_id', user.id).order('created_at');
+  allChars = data ?? [];
+  renderList();
+}
+
+function renderList() {
+  const list = document.getElementById('char-list');
+  if (!allChars.length) {
+    list.innerHTML = '<p style="color:var(--ash-2);font-style:italic;font-size:0.9rem">No characters yet. Create one above!</p>';
+    return;
+  }
+  list.innerHTML = allChars.map(c => `
+    <div class="char-item${currentChar?.id === c.id ? ' active' : ''}" onclick="openChar(${c.id})">
+      <div class="char-avatar">${c.avatar || '⚔'}</div>
+      <div class="char-info">
+        <h4>${c.name}</h4>
+        <p>Level ${c.level ?? 1} ${c.class ?? ''} ${c.race ? '· ' + c.race : ''}</p>
+      </div>
+    </div>
+  `).join('');
+}
+
+window.showCreateForm = function() {
+  document.getElementById('create-form-wrap').style.display = 'block';
+  document.getElementById('create-form-wrap').scrollIntoView({ behavior:'smooth' });
+};
+
+window.createCharacter = async function() {
+  if (!user) { alert('Please sign in to create a character.'); return; }
+  const name = document.getElementById('f-charname').value.trim();
+  if (!name) return alert('Character name required.');
+
+  const data = {
+    user_id: user.id,
+    name,
+    player_name: document.getElementById('f-playername').value.trim(),
+    race: document.getElementById('f-race').value.trim(),
+    class: document.getElementById('f-class').value.trim(),
+    subclass: document.getElementById('f-subclass').value.trim(),
+    level: parseInt(document.getElementById('f-charlevel').value) || 1,
+    background: document.getElementById('f-background').value.trim(),
+    alignment: document.getElementById('f-charalignment').value.trim(),
+    avatar: document.getElementById('f-avatar').value.trim() || '⚔',
+    xp: parseInt(document.getElementById('f-xp').value) || 0,
+    str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10,
+    hp_max: 8, hp_current: 8, hp_temp: 0,
+    ac: 10, speed: 30, initiative: 0,
+    proficiencies: '[]',
+    skills_prof: '{}',
+    notes: '',
+    features: '',
+    equipment: '',
+    spell_slots: '{}',
+    spells_known: '',
+  };
+
+  const { data: created, error } = await supabase.from('characters').insert(data).select().single();
+  if (error) { alert(error.message); return; }
+  allChars.push(created);
+  document.getElementById('create-form-wrap').style.display = 'none';
+  renderList();
+  openChar(created.id);
+};
+
+window.openChar = async function(id) {
+  const c = allChars.find(x => x.id === id);
+  if (!c) return;
+  currentChar = c;
+  renderList();
+  renderSheet(c);
+};
+
+function renderSheet(c) {
+  const pb = profBonus(c.level ?? 1);
+  const abilities = ['str','dex','con','int','wis','cha'];
+  const abilNames  = ['STR','DEX','CON','INT','WIS','CHA'];
+
+  // Compute skill modifiers
+  const skillProf = (() => { try { return JSON.parse(c.skills_prof || '{}'); } catch { return {}; } })();
+  const abilScores = Object.fromEntries(abilities.map(a => [a, c[a] ?? 10]));
+
+  const skillsHtml = SKILLS.map(s => {
+    const base = Math.floor((abilScores[s.ability] - 10) / 2);
+    const prof  = skillProf[s.name] ? pb : 0;
+    const total = base + prof;
+    return `
+      <div class="skill-row">
+        <div class="skill-prof${skillProf[s.name] ? ' on' : ''}" title="Toggle proficiency" onclick="toggleProf('${s.name}')"></div>
+        <span class="skill-name">${s.name}</span>
+        <span class="skill-mod">${total >= 0 ? '+' : ''}${total}</span>
+      </div>
+    `;
+  }).join('');
+
+  const hpPct = Math.max(0, Math.min(100, ((c.hp_current ?? c.hp_max ?? 8) / (c.hp_max ?? 8)) * 100));
+
+  document.getElementById('char-sheet').innerHTML = `
+    <div class="fade-up">
+      <div class="sheet-header">
+        <div class="char-avatar" style="width:64px;height:64px;font-size:2rem">${c.avatar || '⚔'}</div>
+        <div>
+          <div class="sheet-name">${c.name}</div>
+          <div class="sheet-class">Level ${c.level ?? 1} ${c.race ?? ''} ${c.class ?? ''}${c.subclass ? ' (' + c.subclass + ')' : ''} · ${c.background ?? ''} · ${c.alignment ?? ''}</div>
+          <div style="font-size:0.8rem;color:var(--ash-2);margin-top:0.2rem">Player: ${c.player_name ?? '—'} · XP: ${c.xp ?? 0} · Proficiency: +${pb}</div>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:0.5rem">
+          <button class="btn btn-blood" onclick="deleteChar(${c.id})">Delete</button>
+        </div>
+      </div>
+
+      <!-- Core stats -->
+      <div class="sheet-section" style="margin-bottom:1.25rem">
+        <h3>Core Stats</h3>
+        <div class="core-stats">
+          <div class="core-stat"><div class="cs-label">HP Current</div><input type="number" value="${c.hp_current ?? c.hp_max ?? 8}" onchange="updateField('hp_current',+this.value)" style="font-size:1.4rem"/></div>
+          <div class="core-stat"><div class="cs-label">HP Max</div><input type="number" value="${c.hp_max ?? 8}" onchange="updateField('hp_max',+this.value)"/></div>
+          <div class="core-stat"><div class="cs-label">Temp HP</div><input type="number" value="${c.hp_temp ?? 0}" onchange="updateField('hp_temp',+this.value)"/></div>
+          <div class="core-stat"><div class="cs-label">Armor Class</div><input type="number" value="${c.ac ?? 10}" onchange="updateField('ac',+this.value)"/></div>
+          <div class="core-stat"><div class="cs-label">Speed</div><input type="number" value="${c.speed ?? 30}" onchange="updateField('speed',+this.value)"/></div>
+          <div class="core-stat"><div class="cs-label">Initiative</div><input type="number" value="${c.initiative ?? 0}" onchange="updateField('initiative',+this.value)"/></div>
+        </div>
+        <div class="hp-bar-wrap"><div class="hp-bar" id="hp-bar" style="width:${hpPct}%"></div></div>
+      </div>
+
+      <div class="sheet-grid">
+        <!-- Ability Scores -->
+        <div class="sheet-section">
+          <h3>Ability Scores</h3>
+          <div class="ability-grid">
+            ${abilities.map((a,i) => `
+              <div class="ability-box">
+                <div class="ab-label">${abilNames[i]}</div>
+                <input type="number" min="1" max="30" value="${abilScores[a]}" onchange="updateAbility('${a}',+this.value)"/>
+                <div class="ab-mod" id="mod-${a}">${mod(abilScores[a])}</div>
+              </div>
+            `).join('')}
+          </div>
+          <div style="margin-top:0.75rem;font-size:0.8rem;color:var(--ash-2)">
+            <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:0.5rem">
+              <span>Passive Perception: <strong style="color:var(--parchment-2)">${10 + Math.floor((abilScores.wis - 10)/2) + (skillProf['Perception'] ? pb : 0)}</strong></span>
+              <span>Spell Save DC (INT): <strong style="color:var(--parchment-2)">${8 + pb + Math.floor((abilScores.int - 10)/2)}</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Skills -->
+        <div class="sheet-section">
+          <h3>Skills <span style="color:var(--ash-2);font-size:0.75em;font-family:var(--font-body);font-weight:400;text-transform:none;letter-spacing:0"> (click circle to toggle proficiency)</span></h3>
+          <div class="skills-list" id="skills-list">${skillsHtml}</div>
+        </div>
+
+        <!-- Features & Traits -->
+        <div class="sheet-section">
+          <h3>Features & Traits</h3>
+          <textarea class="grimoire-input notes-area" placeholder="Class features, racial traits, feats…" onchange="updateField('features',this.value)">${c.features ?? ''}</textarea>
+        </div>
+
+        <!-- Equipment -->
+        <div class="sheet-section">
+          <h3>Equipment & Inventory</h3>
+          <textarea class="grimoire-input notes-area" placeholder="List your weapons, armor, and items…" onchange="updateField('equipment',this.value)">${c.equipment ?? ''}</textarea>
+        </div>
+
+        <!-- Spells -->
+        <div class="sheet-section">
+          <h3>Spells Known</h3>
+          <textarea class="grimoire-input notes-area" placeholder="Cantrips, prepared spells, or spell slots remaining…" onchange="updateField('spells_known',this.value)">${c.spells_known ?? ''}</textarea>
+        </div>
+
+        <!-- Notes -->
+        <div class="sheet-section">
+          <h3>Notes & Backstory</h3>
+          <textarea class="grimoire-input notes-area" placeholder="Character notes, backstory, personality traits…" onchange="updateField('notes',this.value)">${c.notes ?? ''}</textarea>
+        </div>
+      </div>
+
+      <div style="margin-top:1.5rem;display:flex;gap:0.75rem;flex-wrap:wrap">
+        <button class="btn btn-blood" onclick="saveChar()">💾 Save Character</button>
+        <span id="save-status" style="color:var(--ash-2);font-size:0.85rem;font-style:italic;align-self:center"></span>
+      </div>
+    </div>
+  `;
+}
+
+window.updateField = function(field, value) {
+  if (!currentChar) return;
+  currentChar[field] = value;
+  scheduleSave();
+};
+
+window.updateAbility = function(ability, value) {
+  if (!currentChar) return;
+  currentChar[ability] = value;
+  // Update mod display
+  document.getElementById('mod-' + ability).textContent = mod(value);
+  scheduleSave();
+};
+
+window.toggleProf = function(skillName) {
+  if (!currentChar) return;
+  let profs = {};
+  try { profs = JSON.parse(currentChar.skills_prof || '{}'); } catch {}
+  profs[skillName] = !profs[skillName];
+  currentChar.skills_prof = JSON.stringify(profs);
+  // Re-render just skills section
+  scheduleSave();
+  renderSheet(currentChar);
+};
+
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  const status = document.getElementById('save-status');
+  if (status) status.textContent = 'Unsaved changes…';
+  saveTimer = setTimeout(saveChar, 2500);
+}
+
+window.saveChar = async function() {
+  if (!currentChar) return;
+  const { error } = await supabase.from('characters')
+    .update(currentChar)
+    .eq('id', currentChar.id);
+  const status = document.getElementById('save-status');
+  if (status) status.textContent = error ? '⚠ Save failed' : 'Saved ✓';
+  // Update local list
+  const idx = allChars.findIndex(c => c.id === currentChar.id);
+  if (idx >= 0) allChars[idx] = { ...currentChar };
+  renderList();
+};
+
+window.deleteChar = async function(id) {
+  if (!confirm('Delete this character permanently?')) return;
+  await supabase.from('characters').delete().eq('id', id);
+  allChars = allChars.filter(c => c.id !== id);
+  currentChar = null;
+  renderList();
+  document.getElementById('char-sheet').innerHTML = '<div class="empty-state fade-up"><span>⚔</span><p>Character deleted.</p></div>';
+};
+
+load();
+</script>
+</body>
+</html>

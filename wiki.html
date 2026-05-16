@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Campaign Wiki — The Grimoire</title>
+  <link rel="stylesheet" href="../css/grimoire.css"/>
+  <style>
+    .wiki-layout { display: grid; grid-template-columns: 260px 1fr; gap: 2rem; align-items: start; }
+    @media (max-width: 768px) { .wiki-layout { grid-template-columns: 1fr; } }
+
+    /* Sidebar */
+    .wiki-sidebar { position: sticky; top: calc(var(--nav-h) + 1rem); }
+    .wiki-sidebar h3 { font-family: var(--font-display); font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.75rem; }
+    .wiki-category { margin-bottom: 1.5rem; }
+    .wiki-link {
+      display: block;
+      padding: 0.4rem 0.75rem;
+      font-size: 0.95rem;
+      color: var(--ash-3);
+      border-radius: var(--radius-sm);
+      border-left: 2px solid transparent;
+      transition: all 0.15s;
+      cursor: pointer;
+    }
+    .wiki-link:hover { color: var(--parchment-2); background: rgba(201,151,42,0.06); border-left-color: var(--gold); }
+    .wiki-link.active { color: var(--gold-2); background: rgba(201,151,42,0.1); border-left-color: var(--gold); }
+    .category-label {
+      font-family: var(--font-display);
+      font-size: 0.5rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--ash);
+      padding: 0.25rem 0.75rem;
+      margin-bottom: 0.25rem;
+    }
+
+    /* Article */
+    .wiki-article { min-height: 400px; }
+    .article-header { margin-bottom: 1.5rem; }
+    .article-header h1 { font-size: clamp(1.4rem, 3vw, 2rem); color: var(--parchment-3); margin-bottom: 0.35rem; }
+    .article-meta { font-size: 0.85rem; color: var(--ash-2); font-style: italic; }
+
+    /* Markdown rendered content */
+    .wiki-content { color: var(--parchment-2); line-height: 1.85; font-size: 1rem; }
+    .wiki-content h2 { font-size: 1.2rem; color: var(--gold-2); margin: 1.5rem 0 0.5rem; padding-bottom: 0.25rem; border-bottom: 1px solid rgba(201,151,42,0.2); }
+    .wiki-content h3 { font-size: 1rem; color: var(--parchment-3); margin: 1.25rem 0 0.4rem; }
+    .wiki-content ul, .wiki-content ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    .wiki-content li { margin-bottom: 0.25rem; }
+    .wiki-content blockquote { border-left: 3px solid var(--blood); padding-left: 1rem; color: var(--ash-3); font-style: italic; margin: 1rem 0; }
+    .wiki-content strong { color: var(--parchment-3); }
+    .wiki-content em { color: var(--ash-3); }
+    .wiki-content code { background: var(--ink-3); padding: 0.1em 0.4em; border-radius: 3px; font-size: 0.85em; color: var(--gold); }
+    .wiki-content hr { border: none; height: 1px; background: rgba(201,151,42,0.2); margin: 1.5rem 0; }
+
+    /* Editor */
+    .editor-toolbar { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; flex-wrap: wrap; }
+    .editor-toolbar button { background: var(--ink-3); border: 1px solid var(--ash); color: var(--ash-3); border-radius: var(--radius-sm); padding: 0.25rem 0.6rem; font-size: 0.8rem; cursor: pointer; transition: all 0.15s; }
+    .editor-toolbar button:hover { border-color: var(--gold); color: var(--gold); }
+    #wiki-editor { width: 100%; min-height: 400px; font-family: var(--font-body); font-size: 0.95rem; resize: vertical; }
+
+    /* New page form */
+    #new-page-form { display: none; background: var(--ink-2); border: 1px solid rgba(201,151,42,0.2); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 1.5rem; }
+    .form-group label { display:block;font-family:var(--font-display);font-size:0.55rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--ash-3);margin-bottom:0.35rem; }
+
+    .placeholder-art {
+      text-align: center;
+      padding: 5rem 2rem;
+      color: var(--ash-2);
+    }
+    .placeholder-art span { font-size: 4rem; display: block; margin-bottom: 1rem; opacity: 0.3; }
+  </style>
+</head>
+<body data-page="wiki">
+<div class="page-content">
+<div class="container">
+
+  <div class="section-header fade-up" style="margin-bottom:2rem">
+    <div>
+      <h2>Campaign Wiki</h2>
+      <p style="color:var(--ash-3);font-style:italic;margin:0">Lore, legend, and secrets of the campaign world</p>
+    </div>
+    <div style="display:flex;gap:0.75rem">
+      <input class="grimoire-input" type="search" id="wiki-search" placeholder="Search wiki…" oninput="searchWiki()" style="width:200px"/>
+      <button class="btn btn-blood" id="btn-new-page" style="display:none" onclick="showNewPageForm()">+ New Page</button>
+    </div>
+  </div>
+
+  <!-- New page form (DM only) -->
+  <div id="new-page-form">
+    <h3 style="color:var(--gold);margin-bottom:1rem;font-family:var(--font-display);font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase">New Wiki Page</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">
+      <div class="form-group"><label>Page Title</label><input class="grimoire-input" id="f-title" placeholder="The City of Ashenveil"/></div>
+      <div class="form-group"><label>Category</label>
+        <select class="grimoire-input" id="f-category">
+          <option>Locations</option><option>NPCs</option><option>Factions</option>
+          <option>History</option><option>Sessions</option><option>Items</option><option>Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:0.75rem">
+      <label>Summary (one sentence)</label>
+      <input class="grimoire-input" id="f-summary" placeholder="A crumbling city built atop a mass grave…"/>
+    </div>
+    <div style="display:flex;gap:0.75rem">
+      <button class="btn btn-blood" onclick="createPage()">Create Page</button>
+      <button class="btn btn-ink" onclick="document.getElementById('new-page-form').style.display='none'">Cancel</button>
+    </div>
+  </div>
+
+  <div class="wiki-layout">
+    <!-- Sidebar -->
+    <aside class="wiki-sidebar fade-up" id="wiki-sidebar">
+      <div id="sidebar-content"><p style="color:var(--ash-2);font-style:italic;font-size:0.9rem">Loading pages…</p></div>
+    </aside>
+
+    <!-- Article area -->
+    <main class="wiki-article fade-up-2" id="wiki-article">
+      <div class="placeholder-art">
+        <span>📜</span>
+        <p>Select a page from the sidebar, or ask your DM to create one.</p>
+      </div>
+    </main>
+  </div>
+
+</div>
+</div>
+
+<script type="module">
+import { initNav } from '../js/nav.js';
+import { supabase, getRole } from '../js/supabase.js';
+
+// Simple markdown parser
+function md(text) {
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^---$/gm, '<hr>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`(.+?)`/g, '<code>$1</code>')
+    .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
+    .replace(/^\* (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/^(?!<[hublp])/gm, '')
+    .replace(/\n/g, '<br>');
+}
+
+await initNav();
+const role = await getRole();
+if (role === 'dm') document.getElementById('btn-new-page').style.display = 'inline-flex';
+
+let allPages = [];
+let currentPage = null;
+let isEditing = false;
+
+async function load() {
+  const { data } = await supabase.from('wiki_pages')
+    .select('id, title, category, summary, updated_at')
+    .order('category').order('title');
+  allPages = data ?? [];
+  renderSidebar(allPages);
+}
+
+function renderSidebar(pages) {
+  const cats = {};
+  pages.forEach(p => {
+    if (!cats[p.category]) cats[p.category] = [];
+    cats[p.category].push(p);
+  });
+  const html = Object.entries(cats).map(([cat, pages]) => `
+    <div class="wiki-category">
+      <div class="category-label">${cat}</div>
+      ${pages.map(p => `<div class="wiki-link${currentPage?.id === p.id ? ' active' : ''}" onclick="openPage(${p.id})">${p.title}</div>`).join('')}
+    </div>
+  `).join('');
+  document.getElementById('sidebar-content').innerHTML = html || '<p style="color:var(--ash-2);font-style:italic;font-size:0.9rem">No pages yet.</p>';
+}
+
+window.openPage = async function(id) {
+  if (isEditing && !confirm('Discard unsaved changes?')) return;
+  isEditing = false;
+  const { data } = await supabase.from('wiki_pages').select('*').eq('id', id).single();
+  currentPage = data;
+  renderSidebar(allPages); // re-render to update active
+
+  const updated = new Date(data.updated_at).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+  const article = document.getElementById('wiki-article');
+  article.innerHTML = `
+    <div class="article-header">
+      <span class="card-tag tag-ash" style="margin-bottom:0.5rem">${data.category}</span>
+      <h1>${data.title}</h1>
+      <div class="article-meta">Last updated ${updated}
+        ${role === 'dm' ? ` · <a href="#" onclick="startEdit(); return false;" style="color:var(--gold)">Edit</a>` : ''}
+      </div>
+      ${data.summary ? `<p style="font-style:italic;color:var(--ash-3);margin-top:0.75rem;font-size:0.95rem">${data.summary}</p>` : ''}
+    </div>
+    <hr class="rune"/>
+    <div class="wiki-content" id="rendered-content">${data.content ? '<p>' + md(data.content) + '</p>' : '<p style="color:var(--ash-2);font-style:italic">This page has no content yet.</p>'}</div>
+    <div id="editor-area" style="display:none">
+      <div class="editor-toolbar">
+        <button onclick="insertMd('## ','')">H2</button>
+        <button onclick="insertMd('### ','')">H3</button>
+        <button onclick="insertMd('**','**')">Bold</button>
+        <button onclick="insertMd('*','*')">Italic</button>
+        <button onclick="insertMd('> ','')">Quote</button>
+        <button onclick="insertMd('* ','')">List</button>
+        <button onclick="insertMd('\`','\`')">Code</button>
+        <button onclick="insertMd('---','')">Divider</button>
+      </div>
+      <textarea class="grimoire-input" id="wiki-editor" placeholder="Write in Markdown…">${data.content ?? ''}</textarea>
+      <div style="display:flex;gap:0.75rem;margin-top:0.75rem">
+        <button class="btn btn-blood" onclick="savePage()">Save Page</button>
+        <button class="btn btn-ink" onclick="cancelEdit()">Cancel</button>
+        <button class="btn btn-ink" style="margin-left:auto;border-color:var(--blood)" onclick="deletePage()">Delete Page</button>
+      </div>
+    </div>
+  `;
+};
+
+window.startEdit = function() {
+  isEditing = true;
+  document.getElementById('rendered-content').style.display = 'none';
+  document.getElementById('editor-area').style.display = 'block';
+};
+
+window.cancelEdit = function() {
+  isEditing = false;
+  document.getElementById('rendered-content').style.display = 'block';
+  document.getElementById('editor-area').style.display = 'none';
+};
+
+window.insertMd = function(pre, post) {
+  const ta = document.getElementById('wiki-editor');
+  const s = ta.selectionStart, e = ta.selectionEnd;
+  const sel = ta.value.slice(s, e);
+  ta.value = ta.value.slice(0,s) + pre + sel + post + ta.value.slice(e);
+  ta.focus();
+  ta.setSelectionRange(s + pre.length, s + pre.length + sel.length);
+};
+
+window.savePage = async function() {
+  const content = document.getElementById('wiki-editor').value;
+  const { error } = await supabase.from('wiki_pages')
+    .update({ content, updated_at: new Date().toISOString() })
+    .eq('id', currentPage.id);
+  if (error) { alert(error.message); return; }
+  currentPage.content = content;
+  document.getElementById('rendered-content').innerHTML = content ? '<p>' + md(content) + '</p>' : '<p style="color:var(--ash-2)">No content.</p>';
+  cancelEdit();
+};
+
+window.deletePage = async function() {
+  if (!confirm('Delete this page permanently?')) return;
+  await supabase.from('wiki_pages').delete().eq('id', currentPage.id);
+  currentPage = null;
+  allPages = allPages.filter(p => p.id !== currentPage?.id);
+  load();
+  document.getElementById('wiki-article').innerHTML = '<div class="placeholder-art"><span>📜</span><p>Page deleted.</p></div>';
+};
+
+window.showNewPageForm = function() {
+  document.getElementById('new-page-form').style.display = 'block';
+  document.getElementById('new-page-form').scrollIntoView({ behavior:'smooth' });
+};
+
+window.createPage = async function() {
+  const title    = document.getElementById('f-title').value.trim();
+  const category = document.getElementById('f-category').value;
+  const summary  = document.getElementById('f-summary').value.trim();
+  if (!title) return alert('Title required.');
+  const { data, error } = await supabase.from('wiki_pages').insert({ title, category, summary, content: '' }).select().single();
+  if (error) { alert(error.message); return; }
+  document.getElementById('new-page-form').style.display = 'none';
+  allPages.push(data);
+  renderSidebar(allPages);
+  openPage(data.id);
+};
+
+window.searchWiki = function() {
+  const q = document.getElementById('wiki-search').value.toLowerCase();
+  renderSidebar(q ? allPages.filter(p => p.title.toLowerCase().includes(q) || (p.summary??'').toLowerCase().includes(q)) : allPages);
+};
+
+load();
+</script>
+</body>
+</html>

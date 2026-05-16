@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bestiary — The Grimoire</title>
+  <link rel="stylesheet" href="../css/grimoire.css"/>
+  <style>
+    .monster-card {
+      background: var(--ink-2);
+      border: 1px solid rgba(139,0,0,0.2);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .monster-card:hover { border-color: rgba(139,0,0,0.5); transform: translateY(-2px); }
+    .monster-card h3 { font-family: var(--font-display); font-size: 0.9rem; color: var(--parchment-3); margin-bottom: 0.35rem; }
+    .monster-card .cr-badge {
+      display: inline-block;
+      font-family: var(--font-display);
+      font-size: 0.5rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.15rem 0.5rem;
+      background: rgba(139,0,0,0.35);
+      color: #e08080;
+      border: 1px solid rgba(200,50,50,0.4);
+      border-radius: 2px;
+      margin-right: 0.35rem;
+    }
+    .monster-card p { font-size: 0.9rem; color: var(--ash-3); margin: 0.4rem 0 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+    /* Stat block */
+    .stat-block { background: var(--ink-3); border: 1px solid rgba(201,151,42,0.15); border-radius: var(--radius-md); padding: 1.5rem; }
+    .stat-block-name { font-family: var(--font-display); font-size: 1.1rem; color: var(--blood-3); margin-bottom: 0.15rem; }
+    .stat-block-type { font-style: italic; color: var(--ash-3); font-size: 0.9rem; margin-bottom: 0.75rem; }
+    .stat-divider { height: 2px; background: linear-gradient(to right, var(--blood), var(--gold), var(--blood)); opacity: 0.5; margin: 0.75rem 0; }
+    .ability-scores { display: grid; grid-template-columns: repeat(6,1fr); gap: 0.5rem; text-align: center; margin: 0.75rem 0; }
+    .ability-score-box { background: var(--ink-2); border: 1px solid rgba(201,151,42,0.1); border-radius: var(--radius-sm); padding: 0.5rem 0.25rem; }
+    .ability-score-box .ability-name { font-family: var(--font-display); font-size: 0.45rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ash-2); }
+    .ability-score-box .ability-val { font-size: 1rem; color: var(--parchment-2); font-weight: 600; }
+    .ability-score-box .ability-mod { font-size: 0.75rem; color: var(--gold); }
+    .trait-block { margin-top: 0.75rem; }
+    .trait-block h4 { font-family: var(--font-display); font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.5rem; }
+    .trait { margin-bottom: 0.5rem; font-size: 0.92rem; }
+    .trait strong { color: var(--parchment-3); font-style: italic; }
+    .trait p { color: var(--ash-3); margin: 0.1rem 0 0; }
+
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 200; align-items: flex-start; justify-content: center; padding: 1rem; padding-top: calc(var(--nav-h) + 1rem); overflow-y: auto; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--ink-2); border: 1px solid rgba(201,151,42,0.3); border-radius: var(--radius-lg); padding: 2rem; max-width: 680px; width: 100%; position: relative; animation: fadeUp 0.3s ease both; }
+    .modal-close { position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: var(--ash-2); font-size: 1.3rem; cursor: pointer; }
+    .modal-close:hover { color: var(--parchment-3); }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .form-group label { display: block; font-family: var(--font-display); font-size: 0.55rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ash-3); margin-bottom: 0.35rem; }
+    textarea.grimoire-input { resize: vertical; min-height: 70px; }
+    .empty-state { text-align: center; padding: 4rem 2rem; color: var(--ash-2); font-style: italic; }
+    .empty-state span { font-size: 3rem; display: block; margin-bottom: 1rem; opacity: 0.4; }
+  </style>
+</head>
+<body data-page="bestiary">
+<div class="page-content">
+<div class="container">
+
+  <div class="section-header fade-up">
+    <div>
+      <h2>Monster Bestiary</h2>
+      <p style="color:var(--ash-3);font-style:italic;margin:0">Every horror that lurks in the darkness</p>
+    </div>
+    <button class="btn btn-blood" id="btn-add-monster" style="display:none" onclick="openAddForm()">+ Add Monster</button>
+  </div>
+
+  <div class="filters fade-up-2" style="display:flex;flex-wrap:wrap;gap:0.75rem;margin-bottom:1.5rem">
+    <input class="grimoire-input" type="search" id="search-input" placeholder="Search monsters…" oninput="filter()" style="flex:2;min-width:200px"/>
+    <select class="grimoire-input" id="filter-type" onchange="filter()" style="flex:1;min-width:150px">
+      <option value="">All Types</option>
+      <option>Aberration</option><option>Beast</option><option>Celestial</option><option>Construct</option>
+      <option>Dragon</option><option>Elemental</option><option>Fey</option><option>Fiend</option>
+      <option>Giant</option><option>Humanoid</option><option>Monstrosity</option><option>Ooze</option>
+      <option>Plant</option><option>Undead</option>
+    </select>
+    <select class="grimoire-input" id="filter-cr" onchange="filter()" style="flex:1;min-width:120px">
+      <option value="">All CRs</option>
+      <option>0</option><option>1/8</option><option>1/4</option><option>1/2</option>
+      <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+      <option>6</option><option>7</option><option>8</option><option>9</option><option>10</option>
+      <option>11</option><option>12</option><option>13</option><option>14</option><option>15</option>
+      <option>16</option><option>17</option><option>18</option><option>19</option><option>20</option>
+    </select>
+  </div>
+
+  <!-- Add/Edit Form -->
+  <div class="card" id="monster-form" style="display:none;margin-bottom:1.5rem">
+    <h3 style="color:var(--gold);margin-bottom:1rem;font-family:var(--font-display);font-size:0.8rem;letter-spacing:0.1em;text-transform:uppercase" id="form-title">Add New Monster</h3>
+    <div class="form-grid">
+      <div class="form-group"><label>Name</label><input class="grimoire-input" id="f-name" placeholder="e.g. Shadow Wraith"/></div>
+      <div class="form-group"><label>Type</label>
+        <select class="grimoire-input" id="f-type">
+          <option>Undead</option><option>Aberration</option><option>Beast</option><option>Celestial</option>
+          <option>Construct</option><option>Dragon</option><option>Elemental</option><option>Fey</option>
+          <option>Fiend</option><option>Giant</option><option>Humanoid</option><option>Monstrosity</option>
+          <option>Ooze</option><option>Plant</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Size</label>
+        <select class="grimoire-input" id="f-size">
+          <option>Tiny</option><option>Small</option><option>Medium</option><option>Large</option><option>Huge</option><option>Gargantuan</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Alignment</label><input class="grimoire-input" id="f-alignment" placeholder="Chaotic Evil"/></div>
+      <div class="form-group"><label>Challenge Rating</label><input class="grimoire-input" id="f-cr" placeholder="5"/></div>
+      <div class="form-group"><label>Armor Class</label><input class="grimoire-input" id="f-ac" placeholder="13 (natural armor)"/></div>
+      <div class="form-group"><label>Hit Points</label><input class="grimoire-input" id="f-hp" placeholder="58 (9d8 + 18)"/></div>
+      <div class="form-group"><label>Speed</label><input class="grimoire-input" id="f-speed" placeholder="30 ft., fly 60 ft."/></div>
+      <div class="form-group"><label>STR</label><input class="grimoire-input" id="f-str" placeholder="16" type="number"/></div>
+      <div class="form-group"><label>DEX</label><input class="grimoire-input" id="f-dex" placeholder="12" type="number"/></div>
+      <div class="form-group"><label>CON</label><input class="grimoire-input" id="f-con" placeholder="14" type="number"/></div>
+      <div class="form-group"><label>INT</label><input class="grimoire-input" id="f-int" placeholder="10" type="number"/></div>
+      <div class="form-group"><label>WIS</label><input class="grimoire-input" id="f-wis" placeholder="8" type="number"/></div>
+      <div class="form-group"><label>CHA</label><input class="grimoire-input" id="f-cha" placeholder="14" type="number"/></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">
+      <div class="form-group"><label>Senses</label><input class="grimoire-input" id="f-senses" placeholder="Darkvision 60 ft."/></div>
+      <div class="form-group"><label>Languages</label><input class="grimoire-input" id="f-languages" placeholder="Common, Abyssal"/></div>
+      <div class="form-group"><label>Damage Immunities</label><input class="grimoire-input" id="f-immunities" placeholder="Poison, Necrotic"/></div>
+      <div class="form-group"><label>Condition Immunities</label><input class="grimoire-input" id="f-conditions" placeholder="Charmed, Exhaustion"/></div>
+    </div>
+    <div class="form-group" style="margin-bottom:0.75rem">
+      <label>Lore / Description</label>
+      <textarea class="grimoire-input" id="f-lore" rows="3" placeholder="What players might know about this creature…"></textarea>
+    </div>
+    <div class="form-group" style="margin-bottom:0.75rem">
+      <label>Traits (one per line: "Trait Name. Description.")</label>
+      <textarea class="grimoire-input" id="f-traits" rows="3" placeholder="Shadow Stealth. In dim light or darkness, the wraith can Hide as a bonus action."></textarea>
+    </div>
+    <div class="form-group" style="margin-bottom:0.75rem">
+      <label>Actions (one per line: "Action Name. Description.")</label>
+      <textarea class="grimoire-input" id="f-actions" rows="3" placeholder="Life Drain. Melee Weapon Attack: +4 to hit, reach 5 ft., one creature. Hit: 15 (3d8+2) necrotic damage."></textarea>
+    </div>
+    <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
+      <button class="btn btn-blood" onclick="saveMonster()">Save Monster</button>
+      <button class="btn btn-ink" onclick="closeForm()">Cancel</button>
+      <button class="btn btn-ink" id="btn-delete" style="display:none;margin-left:auto;border-color:var(--blood)" onclick="deleteMonster()">Delete</button>
+    </div>
+  </div>
+
+  <div class="grid-3" id="monster-grid"></div>
+  <div id="empty-state" style="display:none" class="empty-state"><span>☠</span><p>No monsters found. The DM must add them.</p></div>
+
+</div>
+</div>
+
+<!-- Monster Detail Modal -->
+<div class="modal-overlay" id="monster-modal" onclick="closeModal(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script type="module">
+import { initNav } from '../js/nav.js';
+import { supabase, getRole } from '../js/supabase.js';
+
+await initNav();
+const role = await getRole();
+if (role === 'dm') document.getElementById('btn-add-monster').style.display = 'inline-flex';
+
+let allMonsters = [];
+let editingId = null;
+
+function mod(score) {
+  const m = Math.floor((score - 10) / 2);
+  return (m >= 0 ? '+' : '') + m;
+}
+
+async function load() {
+  const { data } = await supabase.from('monsters').select('*').order('name');
+  allMonsters = data ?? [];
+  render(allMonsters);
+}
+
+function render(list) {
+  const grid = document.getElementById('monster-grid');
+  const empty = document.getElementById('empty-state');
+  if (!list.length) { grid.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  grid.innerHTML = list.map(m => `
+    <div class="monster-card fade-up" onclick="openModal(${m.id})">
+      <div style="margin-bottom:0.4rem">
+        <span class="cr-badge">CR ${m.cr ?? '?'}</span>
+        <span class="card-tag tag-ash">${m.type ?? ''}</span>
+        <span class="card-tag tag-bone" style="margin-left:0.25rem">${m.size ?? ''}</span>
+      </div>
+      <h3>${m.name}</h3>
+      <p>${m.lore ?? m.alignment ?? ''}</p>
+      ${role === 'dm' ? `<button class="btn btn-ink" style="margin-top:0.75rem;font-size:0.55rem;padding:0.3rem 0.75rem" onclick="event.stopPropagation();edit(${m.id})">Edit</button>` : ''}
+    </div>
+  `).join('');
+}
+
+window.filter = function() {
+  const q  = document.getElementById('search-input').value.toLowerCase();
+  const tp = document.getElementById('filter-type').value;
+  const cr = document.getElementById('filter-cr').value;
+  render(allMonsters.filter(m =>
+    (!q  || m.name.toLowerCase().includes(q)) &&
+    (!tp || m.type === tp) &&
+    (!cr || String(m.cr) === cr)
+  ));
+};
+
+window.openModal = function(id) {
+  const m = allMonsters.find(x => x.id === id);
+  if (!m) return;
+  const traits  = (m.traits  || '').split('\n').filter(Boolean);
+  const actions = (m.actions || '').split('\n').filter(Boolean);
+
+  function traitHtml(lines, heading) {
+    if (!lines.length) return '';
+    const items = lines.map(l => {
+      const dot = l.indexOf('.');
+      if (dot < 0) return `<div class="trait"><p>${l}</p></div>`;
+      return `<div class="trait"><strong>${l.slice(0,dot+1)}</strong><p>${l.slice(dot+1).trim()}</p></div>`;
+    }).join('');
+    return `<div class="trait-block"><h4>${heading}</h4>${items}</div>`;
+  }
+
+  document.getElementById('modal-body').innerHTML = `
+    <div class="stat-block">
+      <div class="stat-block-name">${m.name}</div>
+      <div class="stat-block-type">${m.size ?? ''} ${m.type ?? ''}, ${m.alignment ?? ''}</div>
+      <div class="stat-divider"></div>
+      <div style="font-size:0.92rem;line-height:1.8;color:var(--parchment-2)">
+        <strong style="color:var(--blood-3)">Armor Class</strong> ${m.ac ?? '—'}<br>
+        <strong style="color:var(--blood-3)">Hit Points</strong> ${m.hp ?? '—'}<br>
+        <strong style="color:var(--blood-3)">Speed</strong> ${m.speed ?? '—'}
+      </div>
+      <div class="stat-divider"></div>
+      <div class="ability-scores">
+        ${['STR','DEX','CON','INT','WIS','CHA'].map((a,i) => {
+          const keys = ['str','dex','con','int','wis','cha'];
+          const val = m[keys[i]] ?? 10;
+          return `<div class="ability-score-box"><div class="ability-name">${a}</div><div class="ability-val">${val}</div><div class="ability-mod">${mod(val)}</div></div>`;
+        }).join('')}
+      </div>
+      <div class="stat-divider"></div>
+      <div style="font-size:0.88rem;line-height:1.9;color:var(--parchment-2)">
+        ${m.immunities ? `<div><strong style="color:var(--blood-3)">Damage Immunities</strong> ${m.immunities}</div>` : ''}
+        ${m.condition_immunities ? `<div><strong style="color:var(--blood-3)">Condition Immunities</strong> ${m.condition_immunities}</div>` : ''}
+        ${m.senses ? `<div><strong style="color:var(--blood-3)">Senses</strong> ${m.senses}</div>` : ''}
+        ${m.languages ? `<div><strong style="color:var(--blood-3)">Languages</strong> ${m.languages}</div>` : ''}
+        <div><strong style="color:var(--blood-3)">Challenge</strong> ${m.cr ?? '—'}</div>
+      </div>
+      ${traitHtml(traits,'Traits')}
+      ${traitHtml(actions,'Actions')}
+      ${m.lore ? `<div class="stat-divider"></div><p style="font-style:italic;font-size:0.9rem;color:var(--ash-3)">${m.lore}</p>` : ''}
+    </div>
+  `;
+  document.getElementById('monster-modal').classList.add('open');
+};
+
+window.closeModal = e => { if (e.target.id === 'monster-modal') document.getElementById('monster-modal').classList.remove('open'); };
+window.closeModalDirect = () => document.getElementById('monster-modal').classList.remove('open');
+
+const fields = ['name','type','size','alignment','cr','ac','hp','speed','str','dex','con','int','wis','cha','senses','languages','immunities','conditions','lore','traits','actions'];
+
+window.openAddForm = function() {
+  editingId = null;
+  document.getElementById('form-title').textContent = 'Add New Monster';
+  document.getElementById('btn-delete').style.display = 'none';
+  fields.forEach(f => { const el = document.getElementById('f-'+f); if (el) el.value = ''; });
+  const form = document.getElementById('monster-form');
+  form.style.display = 'block';
+  form.scrollIntoView({ behavior:'smooth' });
+};
+
+window.edit = function(id) {
+  const m = allMonsters.find(x => x.id === id);
+  if (!m) return;
+  editingId = id;
+  document.getElementById('form-title').textContent = 'Edit Monster';
+  document.getElementById('btn-delete').style.display = 'inline-flex';
+  const map = { name:'name', type:'type', size:'size', alignment:'alignment', cr:'cr', ac:'ac', hp:'hp', speed:'speed', str:'str', dex:'dex', con:'con', int:'int', wis:'wis', cha:'cha', senses:'senses', languages:'languages', immunities:'immunities', conditions:'condition_immunities', lore:'lore', traits:'traits', actions:'actions' };
+  Object.entries(map).forEach(([fld, key]) => {
+    const el = document.getElementById('f-'+fld);
+    if (el) el.value = m[key] ?? '';
+  });
+  const form = document.getElementById('monster-form');
+  form.style.display = 'block';
+  form.scrollIntoView({ behavior:'smooth' });
+};
+
+window.saveMonster = async function() {
+  const payload = {
+    name: document.getElementById('f-name').value.trim(),
+    type: document.getElementById('f-type').value,
+    size: document.getElementById('f-size').value,
+    alignment: document.getElementById('f-alignment').value.trim(),
+    cr: document.getElementById('f-cr').value.trim(),
+    ac: document.getElementById('f-ac').value.trim(),
+    hp: document.getElementById('f-hp').value.trim(),
+    speed: document.getElementById('f-speed').value.trim(),
+    str: parseInt(document.getElementById('f-str').value) || 10,
+    dex: parseInt(document.getElementById('f-dex').value) || 10,
+    con: parseInt(document.getElementById('f-con').value) || 10,
+    int: parseInt(document.getElementById('f-int').value) || 10,
+    wis: parseInt(document.getElementById('f-wis').value) || 10,
+    cha: parseInt(document.getElementById('f-cha').value) || 10,
+    senses: document.getElementById('f-senses').value.trim(),
+    languages: document.getElementById('f-languages').value.trim(),
+    immunities: document.getElementById('f-immunities').value.trim(),
+    condition_immunities: document.getElementById('f-conditions').value.trim(),
+    lore: document.getElementById('f-lore').value.trim(),
+    traits: document.getElementById('f-traits').value.trim(),
+    actions: document.getElementById('f-actions').value.trim(),
+  };
+  if (!payload.name) return alert('Monster name required.');
+  let error;
+  if (editingId) {
+    ({ error } = await supabase.from('monsters').update(payload).eq('id', editingId));
+  } else {
+    ({ error } = await supabase.from('monsters').insert(payload));
+  }
+  if (error) { alert(error.message); return; }
+  closeForm();
+  load();
+};
+
+window.deleteMonster = async function() {
+  if (!editingId || !confirm('Delete permanently?')) return;
+  await supabase.from('monsters').delete().eq('id', editingId);
+  closeForm(); load();
+};
+
+window.closeForm = function() {
+  document.getElementById('monster-form').style.display = 'none';
+  editingId = null;
+};
+
+load();
+</script>
+</body>
+</html>
